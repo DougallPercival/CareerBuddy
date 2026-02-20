@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS raw.ext_src_stc_income (
     "Age" TEXT,
     "Gender" TEXT,
     "Statistics" TEXT,
-    "Occupation - Minor group - National Occupational Classification 2021" TEXT,
+    "Occupation - Minor group - National Occupational Classification" TEXT,
     "Coordinate" TEXT,
     "Total - Employment income statistics[1]" TEXT,
     "Symbol" TEXT,
