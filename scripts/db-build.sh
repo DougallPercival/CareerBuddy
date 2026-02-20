@@ -10,20 +10,20 @@ echo "Starting database setup..."
 
 # Run schema creation script
 echo "Running schemas.sql..."
-psql "$DB_URL" -f schemas.sql
+psql "$DB_URL" -f ../db-build/schemas.sql
 
 # Run raw tables
 echo "Running src_ext_stc_income.sql..."
-psql "$DB_URL" -f src_ext_stc_income.sql
+psql "$DB_URL" -f ../db-build/src_ext_stc_income.sql
 
 echo "Running src_ext_stc_noc.sql..."
-psql "$DB_URL" -f src_ext_stc_noc.sql
+psql "$DB_URL" -f ../db-build/src_ext_stc_noc.sql
 
 # Run staging tables
 echo "Running stg_stc_income.sql..."
-psql "$DB_URL" -f stg_stc_income.sql
+psql "$DB_URL" -f ../db-build/stg_stc_income.sql
 
 echo "Running stg_stc_noc.sql..."
-psql "$DB_URL" -f stg_stc_noc.sql
+psql "$DB_URL" -f ../db-build/stg_stc_noc.sql
 
 echo "Database setup completed successfully!"
