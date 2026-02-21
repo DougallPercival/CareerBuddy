@@ -14,6 +14,8 @@ PIPELINE_NAME="load_raw_stc_income"
 SCHEMA_NAME="raw"
 TABLE_NAME="src_ext_stc_income"
 
+CHUNK_SIZE = 500_000
+
 # Mapping of old column names → new column names
 rename_mapping = {
     'REF_DATE': 'refDate',
@@ -42,9 +44,10 @@ mapping = {
 }
 
 if __name__ == "__main__":
-    logger.info(f"Starting {PIPELINE_NAME}")
+    logger.info(f"Starting {PIPELINE_NAME} - with chunked load")
     start = time.time()
-    
+    total_rows = 0
+
     # datafile passed in as argument from external call
     if len(sys.argv) != 2:
         print("Usage: python raw_stc_income.py <datafile>")
@@ -54,60 +57,67 @@ if __name__ == "__main__":
     table = sys.argv[1]
     logger.info(f"{table} passed in to {PIPELINE_NAME}")
 
-    df = read_csv_as_str(table)
+    #df = read_csv_as_str(table)
+    for i, chunk in enumerate(pd.read_csv(table, chunksize=CHUNK_SIZE)):
+        logger.info(f"Processing chunk {i+1}")
 
-    # remove columns that start with Symbol
-    df = df.loc[:, ~df.columns.str.startswith("Symbol")]
+        df = chunk
 
-    # update titles where substrings like (#) [#] are
-    df.columns = df.columns.str.replace(r"\s*\([^)]*\)", "", regex=True)
-    df.columns = df.columns.str.replace(r"\s*\[[^]]*\]", "", regex=True)
+        # remove columns that start with Symbol
+        df = df.loc[:, ~df.columns.str.startswith("Symbol")]
 
-    # rename the long title occupation column
-    df = df.rename(columns={
-        "Occupation - Minor group - National Occupational Classification 2021":
-            "Occupation"
-    })
+        # update titles where substrings like (#) [#] are
+        df.columns = df.columns.str.replace(r"\s*\([^)]*\)", "", regex=True)
+        df.columns = df.columns.str.replace(r"\s*\[[^]]*\]", "", regex=True)
 
-    # rename income columns
-    df.columns = [
-        col.split(":", 1)[1].strip() if col.startswith("Employment income statistics")
-        else col
-        for col in df.columns
-    ]
+        # rename the long title occupation column
+        df = df.rename(columns={
+            "Occupation - Minor group - National Occupational Classification 2021":
+                "Occupation"
+        })
+
+        # rename income columns
+        df.columns = [
+            col.split(":", 1)[1].strip() if col.startswith("Employment income statistics")
+            else col
+            for col in df.columns
+        ]
 
 
-    # Ensure string (preserves leading zeros)
-    occ = df["Occupation"].astype(str)
+        # Ensure string (preserves leading zeros)
+        occ = df["Occupation"].astype(str)
 
-    # Split once on first space
-    split = occ.str.split(" ", n=1, expand=True)
-    first_part = split[0]
-    second_part = split[1]
+        # Split once on first space
+        split = occ.str.split(" ", n=1, expand=True)
+        first_part = split[0]
+        second_part = split[1]
 
-    # Code = first part only if it's fully numeric
-    df["code"] = first_part.where(first_part.str.isdigit())
+        # Code = first part only if it's fully numeric
+        df["code"] = first_part.where(first_part.str.isdigit())
 
-    # Description:
-    # If first part was numeric → use remainder
-    # Otherwise → use full original string
-    df["description"] = second_part.where(first_part.str.isdigit(), occ)
+        # Description:
+        # If first part was numeric → use remainder
+        # Otherwise → use full original string
+        df["description"] = second_part.where(first_part.str.isdigit(), occ)
 
-    mask = df["Occupation"].isin(mapping)
-    df.loc[mask, "code"] = df.loc[mask, "Occupation"].map(mapping)
+        mask = df["Occupation"].isin(mapping)
+        df.loc[mask, "code"] = df.loc[mask, "Occupation"].map(mapping)
 
-    df.drop(columns=["description", "Occupation"])
+        df.drop(columns=["description", "Occupation"])
 
-    # Apply the rename
-    df.rename(columns=rename_mapping, inplace=True)
+        # Apply the rename
+        df.rename(columns=rename_mapping, inplace=True)
 
-    logger.info(f"{PIPELINE_NAME}: Writing {len(df)} records to {SCHEMA_NAME}.{TABLE_NAME}")
-    write_start = time.time()
+        logger.info(f"{PIPELINE_NAME}: Writing {len(df)} records to {SCHEMA_NAME}.{TABLE_NAME}")
+        write_start = time.time()
 
-    write_table_copy(df, table_name="src_ext_stc_income", schema="raw")
+        write_table_copy(df, table_name="src_ext_stc_income", schema="raw")
 
-    write_end = time.time()
+        write_end = time.time()
+        total_rows += len(chunk)
+        logger.info(f"{PIPELINE_NAME}: Completed write of chunk {i} to {SCHEMA_NAME}.{TABLE_NAME} in {round(write_end - write_start, 2)} seconds")
+
     end = time.time()
 
-    logger.info(f"{PIPELINE_NAME}: Completed write to {SCHEMA_NAME}.{TABLE_NAME} in {round(write_end - write_start, 2)} seconds")
+    
     logger.info(f"{PIPELINE_NAME}: Completed in {round(end - start, 2)} seconds")
