@@ -40,6 +40,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     table = sys.argv[1]
+    print("welcome", sys.argv[1])
 
     df = read_csv_as_str(table)
     print("read table")
