@@ -100,7 +100,7 @@ if __name__ == "__main__":
         # Otherwise → use full original string
         df["description"] = second_part.where(first_part.str.isdigit(), occ)
 
-        mask = df["Occupation"].isin(mapping)
+        mask = df["occupation"].isin(mapping)
         df.loc[mask, "code"] = df.loc[mask, "occupation"].map(mapping)
 
         df.drop(columns=["description", "occupation"])
