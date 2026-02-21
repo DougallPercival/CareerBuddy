@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
         logger.info(f"{PIPELINE_NAME}: Writing {len(df)} records to {SCHEMA_NAME}.{TABLE_NAME}")
         write_start = time.time()
-
+        print(df.columns)
         write_table_copy(df, table_name=TABLE_NAME, schema=SCHEMA_NAME)
 
         write_end = time.time()
