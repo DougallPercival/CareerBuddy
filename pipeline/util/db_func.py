@@ -3,6 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
+import io
 from util.logger import get_logger
 
 logger = get_logger(__name__)
