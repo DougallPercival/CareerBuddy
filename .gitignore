@@ -1,2 +1,4 @@
 .venv/
 prelim-data-analysis/
+
+.env
