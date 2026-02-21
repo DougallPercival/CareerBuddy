@@ -6,11 +6,11 @@
 
 CREATE TABLE IF NOT EXISTS raw.src_ext_stc_noc (
 
-    "Level" TEXT,
-    "Hierarchical structure" TEXT,
-    "Code - NOC 2021 V1.0" TEXT,
-    "Class title" TEXT,
-    "Class definition" TEXT,
+    "level" TEXT,
+    "hierarchy" TEXT,
+    "code" TEXT,
+    "classTitle" TEXT,
+    "classDefinition" TEXT,
 
     -- metadata columns
     ingested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
