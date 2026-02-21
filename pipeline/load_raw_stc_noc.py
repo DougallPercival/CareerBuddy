@@ -1,4 +1,6 @@
 import pandas as pd
+import sys
+
 from util.df_func import read_csv_as_str
 from util.db_func import write_table
 
@@ -38,6 +40,12 @@ special_rows = [
 
 if __name__ == "__main__":
 
+    # datafile passed in as argument from external call
+    if len(sys.argv) != 2:
+            print("Usage: python raw_stc_income.py <datafile>")
+            sys.exit(1)
+
+    table = sys.argv[1]
 
     df = read_csv_as_str(table)
 
