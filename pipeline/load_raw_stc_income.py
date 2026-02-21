@@ -73,7 +73,7 @@ if __name__ == "__main__":
         # rename the long title occupation column
         df = df.rename(columns={
             "Occupation - Minor group - National Occupational Classification 2021":
-                "Occupation"
+                "occupation"
         })
 
         # rename income columns
@@ -101,9 +101,9 @@ if __name__ == "__main__":
         df["description"] = second_part.where(first_part.str.isdigit(), occ)
 
         mask = df["Occupation"].isin(mapping)
-        df.loc[mask, "code"] = df.loc[mask, "Occupation"].map(mapping)
+        df.loc[mask, "code"] = df.loc[mask, "occupation"].map(mapping)
 
-        df.drop(columns=["description", "Occupation"])
+        df.drop(columns=["description", "occupation"])
 
         # Apply the rename
         df.rename(columns=rename_mapping, inplace=True)
