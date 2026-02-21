@@ -4,7 +4,7 @@
 -- Table: raw.ext_src_stc_income
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS raw.ext_src_stc_income (
+CREATE TABLE IF NOT EXISTS raw.src_ext_stc_income (
 
     -- source columns (unaltered from CSV)
     "REF_DATE" TEXT,
