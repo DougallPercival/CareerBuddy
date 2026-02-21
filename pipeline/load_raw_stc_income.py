@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
 
         # Ensure string (preserves leading zeros)
-        occ = df["Occupation"].astype(str)
+        occ = df["occupation"].astype(str)
 
         # Split once on first space
         split = occ.str.split(" ", n=1, expand=True)
