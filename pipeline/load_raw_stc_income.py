@@ -42,11 +42,11 @@ if __name__ == "__main__":
     table = sys.argv[1]
 
     df = read_csv_as_str(table)
-
+    print("read table")
 
     # remove columns that start with Symbol
     df = df.loc[:, ~df.columns.str.startswith("Symbol")]
-
+    print("removed symbol columns")
     # update titles where substrings like (#) [#] are
     df.columns = df.columns.str.replace(r"\s*\([^)]*\)", "", regex=True)
     df.columns = df.columns.str.replace(r"\s*\[[^]]*\]", "", regex=True)
@@ -63,12 +63,14 @@ if __name__ == "__main__":
         else col
         for col in df.columns
     ]
+    print("rename income columns")
 
     # Ensure string (preserves leading zeros)
     occ = df["Occupation"].astype(str)
 
     # Split once on first space
     split = occ.str.split(" ", n=1, expand=True)
+    print("split")
 
     first_part = split[0]
     second_part = split[1]
@@ -80,13 +82,15 @@ if __name__ == "__main__":
     # If first part was numeric → use remainder
     # Otherwise → use full original string
     df["description"] = second_part.where(first_part.str.isdigit(), occ)
+    print("finished description")
 
     mask = df["Occupation"].isin(mapping)
     df.loc[mask, "code"] = df.loc[mask, "Occupation"].map(mapping)
 
+    print("mapped code")
     df.drop(columns=["description", "Occupation"])
 
     # Apply the rename
     df.rename(columns=rename_mapping, inplace=True)
-
+    print("finished rename and writing to database")
     write_table(df, table_name="src_ext_stc_income", schema="raw")
