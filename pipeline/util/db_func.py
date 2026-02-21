@@ -91,7 +91,7 @@ def write_table_copy(df: pd.DataFrame, table_name: str, schema: str = "public"):
         buffer.seek(0)
 
         # tell Postgres exactly which columns we’re writing
-        columns = ", ".join(df.columns)
+        columns = ", ".join([f'"{c}"' for c in df.columns])
 
         cursor.copy_expert(
             f"COPY {schema}.{table_name} ({columns}) FROM STDIN WITH CSV",

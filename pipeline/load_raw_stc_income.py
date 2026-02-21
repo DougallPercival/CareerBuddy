@@ -111,7 +111,7 @@ if __name__ == "__main__":
         logger.info(f"{PIPELINE_NAME}: Writing {len(df)} records to {SCHEMA_NAME}.{TABLE_NAME}")
         write_start = time.time()
 
-        write_table_copy(df, table_name="src_ext_stc_income", schema="raw")
+        write_table_copy(df, table_name=TABLE_NAME, schema=SCHEMA_NAME)
 
         write_end = time.time()
         total_rows += len(chunk)
