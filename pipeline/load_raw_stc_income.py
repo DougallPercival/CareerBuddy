@@ -1,9 +1,18 @@
 import pandas as pd
 import sys
+import time
 
 from util.df_func import read_csv_as_str
-from util.db_func import write_table
+from util.db_func import write_table_copy
+from util.logger import get_logger
 
+logger = get_logger(__name__)
+
+# define variables for this run
+PIPELINE_NAME="load_raw_stc_income"
+# database
+SCHEMA_NAME="raw"
+TABLE_NAME="src_ext_stc_income"
 
 # Mapping of old column names → new column names
 rename_mapping = {
@@ -33,21 +42,23 @@ mapping = {
 }
 
 if __name__ == "__main__":
-
+    logger.info(f"Starting {PIPELINE_NAME}")
+    start = time.time()
+    
     # datafile passed in as argument from external call
     if len(sys.argv) != 2:
         print("Usage: python raw_stc_income.py <datafile>")
+        logger.error(f"No datafile passed in as argument to {PIPELINE_NAME}. Terminating.")
         sys.exit(1)
 
     table = sys.argv[1]
-    print("welcome", sys.argv[1])
+    logger.info(f"{table} passed in to {PIPELINE_NAME}")
 
     df = read_csv_as_str(table)
-    print("read table")
 
     # remove columns that start with Symbol
     df = df.loc[:, ~df.columns.str.startswith("Symbol")]
-    print("removed symbol columns")
+
     # update titles where substrings like (#) [#] are
     df.columns = df.columns.str.replace(r"\s*\([^)]*\)", "", regex=True)
     df.columns = df.columns.str.replace(r"\s*\[[^]]*\]", "", regex=True)
@@ -64,15 +75,13 @@ if __name__ == "__main__":
         else col
         for col in df.columns
     ]
-    print("rename income columns")
+
 
     # Ensure string (preserves leading zeros)
     occ = df["Occupation"].astype(str)
 
     # Split once on first space
     split = occ.str.split(" ", n=1, expand=True)
-    print("split")
-
     first_part = split[0]
     second_part = split[1]
 
@@ -83,15 +92,22 @@ if __name__ == "__main__":
     # If first part was numeric → use remainder
     # Otherwise → use full original string
     df["description"] = second_part.where(first_part.str.isdigit(), occ)
-    print("finished description")
 
     mask = df["Occupation"].isin(mapping)
     df.loc[mask, "code"] = df.loc[mask, "Occupation"].map(mapping)
 
-    print("mapped code")
     df.drop(columns=["description", "Occupation"])
 
     # Apply the rename
     df.rename(columns=rename_mapping, inplace=True)
-    print("finished rename and writing to database")
-    write_table(df, table_name="src_ext_stc_income", schema="raw")
+
+    logger.info(f"{PIPELINE_NAME}: Writing {len(df)} records to {SCHEMA_NAME}.{TABLE_NAME}")
+    write_start = time.time()
+
+    write_table_copy(df, table_name="src_ext_stc_income", schema="raw")
+
+    write_end = time.time()
+    end = time.time()
+
+    logger.info(f"{PIPELINE_NAME}: Completed write to {SCHEMA_NAME}.{TABLE_NAME} in {round(write_end - write_start, 2)} seconds")
+    logger.info(f"{PIPELINE_NAME}: Completed in {round(end - start, 2)} seconds")

@@ -3,6 +3,9 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
+from util.logger import get_logger
+
+logger = get_logger(__name__)
 
 # -------------------------------------------------------------------
 # Load environment variables
@@ -13,6 +16,7 @@ load_dotenv()  # Loads variables from .env
 DB_URI = os.getenv("DATABASE_URI")
 
 if not DB_URI:
+    logger.error("DATABASE_URI not found in environment variables")
     raise ValueError("DATABASE_URI not found in environment variables")
 
 
@@ -43,7 +47,7 @@ def write_table(
     """
 
     if df.empty:
-        print(f"[INFO] DataFrame is empty. Nothing written to {schema}.{table_name}")
+        logger.info(f"[INFO] DataFrame is empty. Nothing written to {schema}.{table_name}")
         return
 
     engine = get_engine()
@@ -60,12 +64,44 @@ def write_table(
                 method="multi"
             )
 
-        print(f"[SUCCESS] Wrote {len(df)} rows to {schema}.{table_name}")
+        logger.info(f"[SUCCESS] Wrote {len(df)} rows to {schema}.{table_name}")
 
     except SQLAlchemyError as e:
-        print(f"[ERROR] Failed to write to {schema}.{table_name}")
-        print(str(e))
+        logger.error(f"[ERROR] Failed to write to {schema}.{table_name}")
+        logger.error(str(e))
         raise
 
     finally:
         engine.dispose()
+
+
+
+def write_table_copy(df: pd.DataFrame, table_name: str, schema: str = "public"):
+    """
+    Fast bulk load using Postgres COPY
+    """
+    engine = get_engine()
+    conn = engine.raw_connection()
+    cursor = conn.cursor()
+
+    try:
+        buffer = io.StringIO()
+        df.to_csv(buffer, index=False, header=False)
+        buffer.seek(0)
+
+        cursor.copy_expert(
+            f"COPY {schema}.{table_name} FROM STDIN WITH CSV",
+            buffer
+        )
+
+        conn.commit()
+        logger.info(f"[SUCCESS] Loaded {len(df)} rows into {schema}.{table_name}")
+
+    except Exception as e:
+        conn.rollback()
+        logger.error(e)
+        raise e
+
+    finally:
+        cursor.close()
+        conn.close()
