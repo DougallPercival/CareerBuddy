@@ -103,14 +103,14 @@ if __name__ == "__main__":
         mask = df["occupation"].isin(mapping)
         df.loc[mask, "code"] = df.loc[mask, "occupation"].map(mapping)
 
-        df.drop(columns=["description", "occupation"])
+        df.drop(columns=["description", "occupation"], inplace=True)
 
         # Apply the rename
         df.rename(columns=rename_mapping, inplace=True)
 
         logger.info(f"{PIPELINE_NAME}: Writing {len(df)} records to {SCHEMA_NAME}.{TABLE_NAME}")
         write_start = time.time()
-        print(df.columns)
+
         write_table_copy(df, table_name=TABLE_NAME, schema=SCHEMA_NAME)
 
         write_end = time.time()
